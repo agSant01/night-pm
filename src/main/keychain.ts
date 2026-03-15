@@ -1,12 +1,21 @@
-import { safeStorage, app } from 'electron';
+import { app, safeStorage } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+/** Single source of truth for all keychain keys; add new secrets here only. */
+export const ALL_SECRET_KEYS = [
+  'claude.anthropicApiKey',
+  'gemini.apiKey',
+  'codex.apiKey',
+  'opencode.apiKey',
 export type SecretKey =
   | 'claude.anthropicApiKey'
   | 'gemini.apiKey'
   | 'codex.apiKey'
   | 'opencode.apiKey';
+] as const;
+
+export type SecretKey = (typeof ALL_SECRET_KEYS)[number];
 
 function getSecretsPath(): string {
   return path.join(app.getPath('userData'), 'night-pm-secrets.enc');
@@ -62,26 +71,12 @@ export async function deleteSecret(key: SecretKey): Promise<void> {
 }
 
 export async function clearAllSecrets(): Promise<void> {
-  const keys: SecretKey[] = [
-    'claude.anthropicApiKey',
-    'gemini.apiKey',
-    'codex.apiKey',
-    'opencode.apiKey',
-  ];
-  await Promise.all(keys.map(deleteSecret));
+  await Promise.all(ALL_SECRET_KEYS.map(deleteSecret));
 }
 
 export async function loadSecrets(): Promise<Record<SecretKey, string>> {
-  const [claudeKey, geminiKey, codexKey, opencodeKey] = await Promise.all([
-    getSecret('claude.anthropicApiKey'),
-    getSecret('gemini.apiKey'),
-    getSecret('codex.apiKey'),
-    getSecret('opencode.apiKey'),
-  ]);
-  return {
-    'claude.anthropicApiKey': claudeKey,
-    'gemini.apiKey': geminiKey,
-    'codex.apiKey': codexKey,
-    'opencode.apiKey': opencodeKey,
-  };
+  const values = await Promise.all(ALL_SECRET_KEYS.map((k) => getSecret(k)));
+  return Object.fromEntries(
+    ALL_SECRET_KEYS.map((k, i) => [k, values[i]]),
+  ) as Record<SecretKey, string>;
 }
