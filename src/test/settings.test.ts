@@ -3,9 +3,12 @@ import * as path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  deleteByPath,
+  getByPath,
   getSetting,
   loadSettingsSync,
-  saveSettings
+  saveSettings,
+  setByPath,
 } from '../main/settings';
 
 const userDataDir = path.join(process.cwd(), '.test-userdata');
@@ -109,13 +112,14 @@ describe('settings', () => {
 
   describe('saveSettings', () => {
     it('does not write secret keys to the JSON file', async () => {
+      vi.resetModules();
+      const { saveSettings } = await import('../main/settings');
       await saveSettings({
         theme: 'dark',
         claude: { anthropicApiKey: 'sk-secret-123' },
       } as Parameters<typeof saveSettings>[0]);
       const raw = readSettingsFile();
       const parsed = JSON.parse(raw);
-      console.log(parsed);
       expect(parsed.theme).toBe('dark');
       expect(parsed.claude).not.toHaveProperty('anthropicApiKey');
       expect(raw).not.toContain('sk-secret-123');
@@ -231,4 +235,63 @@ describe('settings', () => {
       expect(onDisk.claude.authMode).toBe('auto');
     });
   });
+
+  describe('getByPath', () => {
+    it('returns value at path, undefined when missing, or obj when path empty', () => {
+      expect(getByPath({ a: 1 }, ['a'])).toBe(1);
+      expect(getByPath({ claude: { anthropicApiKey: 'sk-123' } }, ['claude', 'anthropicApiKey'])).toBe('sk-123');
+      expect(getByPath({ claude: {} }, ['claude', 'anthropicApiKey'])).toBeUndefined();
+      expect(getByPath({ claude: {} }, ['gemini', 'apiKey'])).toBeUndefined();
+      const obj = { a: 1 };
+      expect(getByPath(obj, [])).toBe(obj);
+      expect(getByPath({ a: null }, ['a'])).toBeUndefined();
+    });
+  });
+
+  describe('deleteByPath', () => {
+    it('removes at path, or no-op when path missing or empty', () => {
+      const leaf = { a: 1, b: 2 };
+      deleteByPath(leaf, ['a']);
+      expect(leaf).toEqual({ b: 2 });
+
+      const nested = { claude: { anthropicApiKey: 'x', model: 'y' } };
+      deleteByPath(nested, ['claude', 'anthropicApiKey']);
+      expect(nested).toEqual({ claude: { model: 'y' } });
+
+      const noPath = { a: 1 };
+      deleteByPath(noPath, ['b']);
+      expect(noPath).toEqual({ a: 1 });
+
+      const emptyPath = { a: 1 };
+      deleteByPath(emptyPath, []);
+      expect(emptyPath).toEqual({ a: 1 });
+    });
+  });
+
+  describe('setByPath', () => {
+    it('sets leaf property', () => {
+      const obj: Record<string, unknown> = {};
+      setByPath(obj, ['a'], 1);
+      expect(obj).toEqual({ a: 1 });
+    });
+
+    it('sets nested property and creates intermediate objects', () => {
+      const obj: Record<string, unknown> = {};
+      setByPath(obj, ['claude', 'anthropicApiKey'], 'sk-123');
+      expect(obj).toEqual({ claude: { anthropicApiKey: 'sk-123' } });
+    });
+
+    it('overwrites existing value at path', () => {
+      const obj = { claude: { anthropicApiKey: 'old' } } as Record<string, unknown>;
+      setByPath(obj, ['claude', 'anthropicApiKey'], 'new');
+      expect(getByPath(obj, ['claude', 'anthropicApiKey'])).toBe('new');
+    });
+
+    it('no-op when pathSegments is empty', () => {
+      const obj: Record<string, unknown> = { a: 1 };
+      setByPath(obj, [], 'x');
+      expect(obj).toEqual({ a: 1 });
+    });
+  });
+
 });
