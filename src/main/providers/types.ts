@@ -44,6 +44,9 @@ export interface StartSessionOpts {
   resumeSessionId?: string;
   systemInstructions?: string;
   setActiveProject?: (projectPath: string) => void;
+  /** When set, MCP context is resolved per tool call so project_set_active is visible. */
+  // getProjectPath?: () => string | null;
+  // getRootPath?: () => string | null;
 }
 
 export interface AIProvider {

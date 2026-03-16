@@ -16,6 +16,8 @@
     "test:codex": "vitest run src/test/codex.test.ts",
     "test:claude": "vitest run src/test/claude.test.ts",
     "test:opencode": "vitest run src/test/opencode.test.ts",
+    "test:mcp-http": "vitest run src/test/mcp-http.test.ts",
+    "test:mcp-tools": "vitest run src/test/mcp-tools.test.ts",
     "test:watch": "vitest",
     "reset": "rm -f \"$HOME/Library/Application Support/Night PM/night-pm-settings.json\" && node scripts/clear-keychain.mjs && echo 'Night PM settings cleared.'"
   },
@@ -25,6 +27,9 @@
     "email": "luis.romero.sevilla.pr@gmail.com"
   },
   "license": "MIT",
+  "pnpm": {
+    "nodeLinker": "hoisted"
+  },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
     "@electron-forge/maker-deb": "^7.11.1",

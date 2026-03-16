@@ -1,20 +1,52 @@
-import { query, listSessions } from "@anthropic-ai/claude-agent-sdk";
 import type {
   SDKMessage,
   SDKUserMessage,
-} from "@anthropic-ai/claude-agent-sdk";
-import { app } from "electron";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { createProjectMcpServer } from "../mcp-tools";
-import { getShellPath } from "../detect-providers";
-import type {
-  AIProvider,
-  StartSessionOpts,
-  MessageCallback,
-  SessionInfo,
-} from "./types";
+} from '@anthropic-ai/claude-agent-sdk';
+import { createSdkMcpServer, listSessions, query, tool } from "@anthropic-ai/claude-agent-sdk";
+import { app } from 'electron';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { getShellPath } from '../detect-providers';
+import { createMcpContext, tools } from '../tool-handlers';
+import { scanProjectTree } from '../utils';
+import type { AIProvider, MessageCallback, StartSessionOpts } from './types';
 
+interface ProjectMcpOptions {
+  projectPath: string;
+  rootPath?: string;
+  setActiveProject?: (projectPath: string) => void;
+  /** When set, context is resolved per tool call so project_set_active and other changes are visible. */
+  getProjectPath?: () => string | null;
+  getRootPath?: () => string | null;
+}
+
+export function createProjectMcpServer(opts: ProjectMcpOptions) {
+  const { projectPath, rootPath, setActiveProject } = opts;
+  if (!projectPath?.trim()) {
+    throw new Error('Project path is required to create the MCP server.');
+  }
+  const ctx = createMcpContext({
+    projectPath,
+    scanRoot: rootPath ?? path.dirname(projectPath),
+    setActiveProject,
+    scanProjectTree,
+  });
+
+  return createSdkMcpServer({
+    name: 'night-pm',
+    version: '1.0.0',
+    tools: Object.entries(tools).map(([name, t]) => {
+      return tool(name, t.description, t.schema, async (args: unknown) =>
+        await t.handler(ctx, args),
+      );
+    }),
+  });
+}
+
+/**
+ * Resolve the path to the Claude CLI executable.
+ * @returns The path to the Claude CLI executable.
+ */
 function resolveClaudeCliPath(): string {
   const candidates = [
     path.join(

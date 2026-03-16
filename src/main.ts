@@ -6,7 +6,7 @@ import { registerShortcuts, unregisterShortcuts } from './main/shortcuts';
 import { startConversation, sendFollowup, stopConversation, listSessions, getActiveProviderId } from './main/engine';
 import { loadSettings, saveSettings } from './main/settings';
 import { detectProviders } from './main/detect-providers';
-import { scanProjectTree } from './main/mcp-tools';
+import { scanProjectTree } from './main/utils';
 import { startMcpHttpServer, stopMcpHttpServer, getStatus as getMcpStatus } from './main/mcp-http';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';

@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createClaudeProvider } from '../main/providers/claude';
-import { createCapture, printCapture, TEST_PROMPT, TEST_PROJECT_PATH } from './harness';
+import { createCapture, printCapture, TEST_PROJECT_PATH, TEST_PROMPT } from './harness';
 
 const isVertex = process.env.CLAUDE_CODE_USE_VERTEX === '1';
 const anthropicKey = process.env.ANTHROPIC_API_KEY ?? '';
@@ -37,7 +37,7 @@ describe('Claude Provider', () => {
   });
 
   it('provider.startSession: captures messages through callback', async () => {
-    const provider = createClaudeProvider(() => ({
+    const provider = createClaudeProvider(async () => ({
       authMode: isVertex ? 'vertex' : 'api-key',
       anthropicApiKey: anthropicKey,
       vertexProjectId: process.env.ANTHROPIC_VERTEX_PROJECT_ID ?? '',
@@ -75,7 +75,7 @@ describe('Claude Provider', () => {
   }, 90_000);
 
   it('provider.sendFollowup: multi-turn works', async () => {
-    const provider = createClaudeProvider(() => ({
+    const provider = createClaudeProvider(async () => ({
       authMode: isVertex ? 'vertex' : 'api-key',
       anthropicApiKey: anthropicKey,
       vertexProjectId: process.env.ANTHROPIC_VERTEX_PROJECT_ID ?? '',
