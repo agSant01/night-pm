@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './main/ipc-handlers';
-import { createMainWindow, getThoughtsWindow, registerWindowIpc } from './main/windows';
+import { createMainWindow, getMainWindow, getThoughtsWindow, registerWindowIpc } from './main/windows';
 import { registerShortcuts, unregisterShortcuts } from './main/shortcuts';
 import { startConversation, sendFollowup, stopConversation, listSessions, getActiveProviderId } from './main/engine';
 import { loadSettings, saveSettings } from './main/settings';
@@ -20,9 +20,15 @@ app.setName('Night PM');
 let activeProjectPath: string | null = null;
 let rootDirPath: string | null = null;
 
+/**
+ * Set the active project and save the settings.
+ * Send a message to the main window to notify the renderer that the active project has changed.
+ * @param projectPath
+ */
 function setActiveProject(projectPath: string) {
   activeProjectPath = projectPath;
   void saveSettings({ selectedProjectPath: projectPath });
+  sendToWindow(getMainWindow(), 'app:activeProjectChanged', projectPath);
 }
 
 function sendToWindow(win: BrowserWindow | null, channel: string, ...args: unknown[]) {
@@ -30,6 +36,9 @@ function sendToWindow(win: BrowserWindow | null, channel: string, ...args: unkno
     win.webContents.send(channel, ...args);
   }
 }
+
+// Keep a reference so the menu model isn't GC'd; avoids macOS "representedObject is not a WeakPtrToElectronMenuModelAsNSObject" warning.
+let applicationMenu: Electron.Menu | null = null;
 
 app.on('ready', () => {
   void (async () => {
@@ -40,7 +49,8 @@ app.on('ready', () => {
     { role: 'viewMenu' },
     { role: 'windowMenu' },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  applicationMenu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(applicationMenu);
 
   registerIpcHandlers();
   registerWindowIpc();
@@ -198,5 +208,5 @@ app.on('will-quit', () => {
   unregisterShortcuts();
   stopConversation('thought');
   stopConversation('console');
-  stopMcpHttpServer().catch(() => {});
+  stopMcpHttpServer().catch((e) => console.error('[MCP HTTP] Error stopping:', e));
 });

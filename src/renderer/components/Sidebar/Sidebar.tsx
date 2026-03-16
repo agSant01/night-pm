@@ -6,7 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAppStore } from '../../store';
 import { FileTree } from './FileTree';
 import { useTheme } from '../../hooks/useTheme';
-import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   onOpenSettings: () => void;
@@ -50,6 +49,14 @@ export function Sidebar({ onOpenSettings, onOpenConsole, onOpenAllCalendars, onO
       cleanup();
     };
   }, [rootPath]);
+
+  // Sync store when active project changes from main (e.g. via MCP project_set_active)
+  useEffect(() => {
+    const unsubscribe = window.nightAPI.app.onActiveProjectChanged((projectPath) => {
+      setSelectedProject(projectPath);
+    });
+    return unsubscribe;
+  }, []);
 
   async function handleOpenDirectory() {
     const dirPath = await window.nightAPI.dialog.openDirectory();

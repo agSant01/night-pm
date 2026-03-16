@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("nightAPI", {
   app: {
     setActiveProject: (p: string) =>
       ipcRenderer.invoke("app:setActiveProject", p),
+    onActiveProjectChanged: (cb: (projectPath: string) => void) =>
+      onIpc("app:activeProjectChanged", cb as (...a: unknown[]) => void),
   },
   window: {
     minimize: () => ipcRenderer.invoke("window:minimize"),

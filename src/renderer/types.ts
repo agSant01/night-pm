@@ -200,6 +200,7 @@ export interface ProviderAvailability {
 export interface NightAPI {
   app: {
     setActiveProject: (projectPath: string) => Promise<void>;
+    onActiveProjectChanged: (callback: (projectPath: string) => void) => () => void;
   };
   window: {
     minimize: () => Promise<void>;
