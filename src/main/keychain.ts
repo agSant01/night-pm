@@ -8,11 +8,6 @@ export const ALL_SECRET_KEYS = [
   'gemini.apiKey',
   'codex.apiKey',
   'opencode.apiKey',
-export type SecretKey =
-  | 'claude.anthropicApiKey'
-  | 'gemini.apiKey'
-  | 'codex.apiKey'
-  | 'opencode.apiKey';
 ] as const;
 
 export type SecretKey = (typeof ALL_SECRET_KEYS)[number];

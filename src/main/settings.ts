@@ -107,8 +107,6 @@ function hydrateWithSecrets(
       ...diskSettings.opencode,
       apiKey: secrets['opencode.apiKey'] ?? '',
     },
-import { loadSecrets, setSecret } from './keychain';
-import type { SecretKey } from './keychain';
   };
 }
 
